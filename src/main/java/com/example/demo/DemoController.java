@@ -37,7 +37,7 @@ public class DemoController {
 	@GetMapping("/test/{time}")
 	public String test(@PathVariable int time,
 		@RequestParam int timeout,
-		@RequestParam(required = false) Integer resolution) throws IOException, ExecutionException, InterruptedException {
+		@RequestParam(required = false) Integer interval) throws IOException, ExecutionException, InterruptedException {
 
 		RequestConfig requestConfig = RequestConfig.custom()
 			.setConnectTimeout(timeout)
@@ -48,9 +48,16 @@ public class DemoController {
 		HttpAsyncClientBuilder clb = HttpAsyncClients.custom()
 			.setDefaultRequestConfig(requestConfig);
 
-		if (resolution != null) {
+		if (interval != null) {
+			// https://stackoverflow.com/questions/38178473/unable-to-set-socket-timeout-less-than-1000-milliseconds-in-requestconfig-apach
+
+			// Timeout of a request will be checked as set in RequestConfig
+			// but the 'timeout response' will be returned in every set interval scheduled, not the instant timeout happened.
+
+			// ex) interval = 1000ms, timeout happened = 1100ms > then you can have the timeout response in 2000ms
+			// Default interval is 1000ms, and too short interval makes cpu unnecessarily busy.
 			IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
-				.setSelectInterval(resolution)
+				.setSelectInterval(interval)
 				.setConnectTimeout(timeout)
 				.setSoTimeout(timeout)
 				.build();
